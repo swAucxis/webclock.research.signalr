@@ -5,11 +5,19 @@ using Webclock.Research.SignalR.Services;
 
 namespace Webclock.Research.SignalR.Actors
 {
-    public class ConnectionActor : ReceiveActor
+    public class ConnectionActor : ReceiveActor, IWithTimers
     {
         private readonly string _connectionId;
         private readonly string _type;
         private readonly ISignalRProcessor _webSocketToConnector;
+
+        private const string HeartbeatKey = "keep-alive";
+
+        private sealed class Hb
+        {
+            public static readonly Hb Instance = new Hb();
+            private Hb(){}
+        }
 
         public ConnectionActor(string connectionId, string type, ISignalRProcessor webSocketToConnector)
         {
@@ -20,6 +28,13 @@ namespace Webclock.Research.SignalR.Actors
             Receive<StartClockRequestByMonitor>(m => HandleStartClockRequestByMonitor(m));
             Receive<AddBid>(m => HandleAddBid(m));
             Receive<BuyIntentionQuit>(m => HandleBuyIntentionQuit(m));
+            Receive<Hb>(_ => { }); // ignore - used to keep the actor spinning so we avoid scheduling latency
+        }
+
+        protected override void PreStart()
+        {
+            // spin every 20ms
+            Timers.StartPeriodicTimer(HeartbeatKey, Hb.Instance, TimeSpan.FromMilliseconds(20));
         }
 
         private void HandleStartClockRequestByMonitor(StartClockRequestByMonitor startClockRequestByMonitor)
@@ -55,5 +70,7 @@ namespace Webclock.Research.SignalR.Actors
         {
             return Akka.Actor.Props.Create(() => new ConnectionActor(connectionId, type, webSocketToConnector));
         }
+
+        public ITimerScheduler Timers { get; set; }
     }
 }
