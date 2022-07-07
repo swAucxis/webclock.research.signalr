@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using System.Diagnostics;
+using Phobos.Actor.Common;
 using Webclock.Research.SignalR.Messages;
 using Webclock.Research.SignalR.Services;
 
@@ -13,7 +14,7 @@ namespace Webclock.Research.SignalR.Actors
 
         private const string HeartbeatKey = "keep-alive";
 
-        private sealed class Hb
+        private sealed class Hb : INeverInstrumented // never monitored or traced
         {
             public static readonly Hb Instance = new Hb();
             private Hb(){}
